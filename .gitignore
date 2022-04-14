@@ -1,0 +1,11 @@
+.vscode/
+__pycache__/
+saved_models/
+log/
+results/
+
+*.pyc
+*.log
+*.bin
+*.pkl
+*.model
