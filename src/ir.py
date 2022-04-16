@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 from nltk.tokenize import word_tokenize
 from sklearn.datasets import fetch_20newsgroups
 from nltk.lm.preprocessing import padded_everygram_pipeline
+import random
 
 parser = argparse.ArgumentParser(description='Run Information Retrieval')
 parser.add_argument('--model', type=str, help='Patht to trained SCDV model')
@@ -85,6 +86,7 @@ model = SCDV.load(args.model)
 logging.info(f"Loading queries from {args.query}")
 with open(args.query, 'r') as f:
     queries = [line.strip() for line in f]
+    queries = random.sample(queries, 100)
 query_words = [word_tokenize(query) for query in queries]
 query_unigram_probabilities = list()
 for query in tqdm(query_words):
