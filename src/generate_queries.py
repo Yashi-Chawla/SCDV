@@ -19,7 +19,16 @@ if args.documents == '20newsgroups':
     newsgroup = fetch_20newsgroups(subset='all')
     documents = [article for article in tqdm(newsgroup['data'])]
 else:
-    documents = [Path(args.documents).joinpath(f).read_text() for f in Path(args.documents).iterdir()]
+    documents = list()
+    p = Path(args.documents)
+    files = list(p.glob("**/*.txt"))
+    for file in tqdm(files):
+        try:
+            with open(file, "r", encoding='utf8') as f:
+                text = f.read().strip()
+        except:
+            pass
+        documents.append(text)
 
 with open(args.output, 'w', encoding='utf8') as f:
     for document in tqdm(documents):
