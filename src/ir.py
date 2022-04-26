@@ -13,13 +13,16 @@ from nltk.tokenize import word_tokenize
 from sklearn.datasets import fetch_20newsgroups
 from nltk.lm.preprocessing import padded_everygram_pipeline
 import random
+import ir_datasets
+
+dataset = ir_datasets.load("trec-fair-2021/train")
 
 random.seed(0)
 
 parser = argparse.ArgumentParser(description='Run Information Retrieval')
-parser.add_argument('--model', type=str, help='Patht to trained SCDV model')
+parser.add_argument('--model', type=str, help='Path to trained SCDV model')
 parser.add_argument('--lm_ngram', type=int, default=3, help='N-gram for language model')
-parser.add_argument('--query', type=str, help='Path to queries', default='data/query.txt')
+parser.add_argument('--query', type=str, help='Path to queries')#, default='data/query.txt')
 parser.add_argument('--documents', type=str, help='Path to documents', default='20newsgroups')
 parser.add_argument('--lambda_', type=float, default=0.5, help='Lambda parameter for SCDV IR')
 parser.add_argument('--p', type=float, default=0.04, help='Percentage Sparsity threshold SCDV IR')
@@ -101,75 +104,78 @@ for query in tqdm(query_words):
         unigram_probabilities[word] = lm.score(word)
     query_unigram_probabilities.append(unigram_probabilities)
 
-logging.info(f"Loading documents from {args.documents}")
-if args.documents == '20newsgroups':
-    logging.info('Loading 20newsgroups dataset')
-    newsgroup = fetch_20newsgroups(subset='all')
-    documents = [article for article in tqdm(newsgroup['data'])][:5000]
-else:
-    logging.info(f'Loading data from {args.documents}')
-    documents = [Path(args.documents).joinpath(f).read_text() for f in Path(args.documents).iterdir()]
-document_words = [word_tokenize(document) for document in documents]
+logging.info(f"Loading documents from TREC")
+# if args.documents == '20newsgroups':
+#     logging.info('Loading 20newsgroups dataset')
+#     newsgroup = fetch_20newsgroups(subset='all')
+#     documents = [article for article in tqdm(newsgroup['data'])][:5000]
+# else:
+#     logging.info(f'Loading data from {args.documents}')
+#     documents = [Path(args.documents).joinpath(f).read_text() for f in Path(args.documents).iterdir()]
+# document_words = [word_tokenize(document) for document in documents]
 
-logging.info("Vectorizing queries")
-query_vectors = [model.get_document_vector(word_tokenize(query)) for query in tqdm(queries)]
-query_vectors = np.asarray(query_vectors)
+documents = [doc for doc in dataset.iter()]
+print(documents)
 
-logging.info("Vectorizing documents")
-document_vectors = [model.get_document_vector(word_tokenize(document)) for document in tqdm(documents)]
-document_vectors = np.asarray(document_vectors)
-document_vectors = make_sparse_document_vectors(document_vectors)
+# logging.info("Vectorizing queries")
+# query_vectors = [model.get_document_vector(word_tokenize(query)) for query in tqdm(queries)]
+# query_vectors = np.asarray(query_vectors)
 
-logging.info("Fitting Language Models and computing Uni-gram probabilities")
-document_lm = list()
-document_unigram_probabilities = list()
-for document in tqdm(document_words):
-    unigram_probabilities = dict()
-    train, vocab = padded_everygram_pipeline(args.lm_ngram, [document])
-    lm = MLE(args.lm_ngram)
-    lm.fit(train, vocab)
-    document_lm.append(lm)
-    for word in document:
-        unigram_probabilities[word] = lm.score(word)
-    document_unigram_probabilities.append(unigram_probabilities)
+# logging.info("Vectorizing documents")
+# document_vectors = [model.get_document_vector(word_tokenize(document)) for document in tqdm(documents)]
+# document_vectors = np.asarray(document_vectors)
+# document_vectors = make_sparse_document_vectors(document_vectors)
 
-logging.info("Computing scores")
-total_queries = len(queries)
-total_documents = len(documents)
-Path.cwd().joinpath(args.output).mkdir(exist_ok=True)
-with open(f"{args.output}/PV.txt", 'w') as f_pv, open(f"{args.output}/QD.txt", 'w') as f_qd, open(f"{args.output}/LM.txt", 'w') as f_lm:
-    for query_idx in tqdm(range(total_queries)):
+# logging.info("Fitting Language Models and computing Uni-gram probabilities")
+# document_lm = list()
+# document_unigram_probabilities = list()
+# for document in tqdm(document_words):
+#     unigram_probabilities = dict()
+#     train, vocab = padded_everygram_pipeline(args.lm_ngram, [document])
+#     lm = MLE(args.lm_ngram)
+#     lm.fit(train, vocab)
+#     document_lm.append(lm)
+#     for word in document:
+#         unigram_probabilities[word] = lm.score(word)
+#     document_unigram_probabilities.append(unigram_probabilities)
+
+# logging.info("Computing scores")
+# total_queries = len(queries)
+# total_documents = len(documents)
+# Path.cwd().joinpath(args.output).mkdir(exist_ok=True)
+# with open(f"{args.output}/PV.txt", 'w') as f_pv, open(f"{args.output}/QD.txt", 'w') as f_qd, open(f"{args.output}/LM.txt", 'w') as f_lm:
+#     for query_idx in tqdm(range(total_queries)):
         
-        if (query_idx + 1) % 20 == 0:
-            logging.info(f'Processing query {query_idx}/{total_queries}')
+#         if (query_idx + 1) % 20 == 0:
+#             logging.info(f'Processing query {query_idx}/{total_queries}')
         
-        scores = list()
-        f_pv.write(queries[query_idx] + '\n\n')
-        f_qd.write(queries[query_idx] + '\n\n')
-        f_lm.write(queries[query_idx] + '\n\n')
+#         scores = list()
+#         f_pv.write(queries[query_idx] + '\n\n')
+#         f_qd.write(queries[query_idx] + '\n\n')
+#         f_lm.write(queries[query_idx] + '\n\n')
 
-        for document_idx in tqdm(range(total_documents)):
+#         for document_idx in tqdm(range(total_documents)):
 
-            if (document_idx + 1) % 1000 == 0:
-                logging.info(f'{document_idx + 1}/{total_documents} documents processed')
+#             if (document_idx + 1) % 1000 == 0:
+#                 logging.info(f'{document_idx + 1}/{total_documents} documents processed')
 
-            score_lm = document_lm[document_idx].score(query_words[query_idx][-1], query_words[query_idx][:-1])
-            score_pv, score_qd = get_scores(model, query_idx, document_idx, query_unigram_probabilities, document_unigram_probabilities)
-            scores.append((score_pv, score_qd, score_lm, document_idx))
+#             score_lm = document_lm[document_idx].score(query_words[query_idx][-1], query_words[query_idx][:-1])
+#             score_pv, score_qd = get_scores(model, query_idx, document_idx, query_unigram_probabilities, document_unigram_probabilities)
+#             scores.append((score_pv, score_qd, score_lm, document_idx))
 
-        for i in range(0, 3):
-            scores.sort(key=lambda x: x[i], reverse=True)
-            if i == 0:
-                f = f_pv
-            elif i == 1:
-                f = f_qd
-            else:
-                f = f_lm
-            for score in scores[:args.top]:
-                f.write(f'Score: {score[i]}\n\nDocument: {documents[score[3]]}\n\n')
-            f.write('--------------------------------------------------------------------------------\n\n')
-            f.flush()
+#         for i in range(0, 3):
+#             scores.sort(key=lambda x: x[i], reverse=True)
+#             if i == 0:
+#                 f = f_pv
+#             elif i == 1:
+#                 f = f_qd
+#             else:
+#                 f = f_lm
+#             for score in scores[:args.top]:
+#                 f.write(f'Score: {score[i]}\n\nDocument: {documents[score[3]]}\n\n')
+#             f.write('--------------------------------------------------------------------------------\n\n')
+#             f.flush()
         
-        f_pv.flush()
-        f_qd.flush()
-        f_lm.flush()
+#         f_pv.flush()
+#         f_qd.flush()
+#         f_lm.flush()
