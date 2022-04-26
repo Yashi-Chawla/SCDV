@@ -1,6 +1,7 @@
 import sys
 sys.path.append('scdv/')
 
+import random
 import logging
 import argparse
 from scdv import SCDV
@@ -42,10 +43,20 @@ if args.data == '20newsgroups':
         corpus.append(word_list)
 else:
     logging.info(f'Loading data from {args.data}')
-    with open(args.data, 'r') as f:
-        for line in tqdm(f):
-            word_list = word_tokenize(line)
-            corpus.append(word_list)
+    if args.data == "bbc":
+        args.data = "data/bbc/all"
+    elif args.data == "allthenews":
+        args.data = "data/allthenews/"
+    else:
+        pass
+
+    p = Path(args.data)
+    files = list(p.glob("**/*.txt"))
+    for file in tqdm(files):
+        with open(file, "r", encoding='utf8') as f:
+            text = f.read().strip()
+        word_list = word_tokenize(text)
+        corpus.append(word_list)
 
 model = SCDV(
     init_vector_type=args.init_vector_type,

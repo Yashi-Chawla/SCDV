@@ -1,6 +1,7 @@
 import sys
 sys.path.append('scdv/')
 
+import random
 import logging
 import argparse
 import numpy as np
@@ -12,6 +13,8 @@ from nltk.tokenize import word_tokenize
 from sklearn.datasets import fetch_20newsgroups
 from nltk.lm.preprocessing import padded_everygram_pipeline
 import random
+
+random.seed(0)
 
 parser = argparse.ArgumentParser(description='Run Information Retrieval')
 parser.add_argument('--model', type=str, help='Patht to trained SCDV model')
